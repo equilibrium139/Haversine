@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 
+#include "profiler.h"
+#include "timing.h"
+
 using f64 = double;
 using u64 = std::uint64_t;
 
@@ -23,6 +26,8 @@ static f64 ReferenceHaversine(const Pair& pair, f64 EarthRadius);
 
 int main(int argc, char** argv)
 {
+	Profiler profiler;
+
 	if (argc < 2)
 	{
 		std::cout << "Usage: haversine json_file [answer_file]\n";
@@ -36,7 +41,12 @@ int main(int argc, char** argv)
 		answerFilename = argv[2];
 	}
 
+	profiler.Log("Startup");
+
 	std::vector<Pair> pairs = ParseJson(jsonFilename);
+
+	profiler.Log("Read and parse JSON");
+
 	std::vector<f64> distances(pairs.size());
 	f64 sum = 0.0;
 	for (u64 i = 0; i < pairs.size(); i++)
@@ -48,6 +58,8 @@ int main(int argc, char** argv)
 	f64 average = sum / pairs.size();
 	std::cout << "Average: " << average << '\n';
 
+	profiler.Log("Sum");
+
 	if (answerFilename != nullptr)
 	{
 		std::ifstream answerFile{ answerFilename, std::ios::binary };
@@ -57,6 +69,10 @@ int main(int argc, char** argv)
 		answerFile.read((char*)&answerFileContents[0], answerFileSizeBytes);
 		std::cout << "Answer file average: " << answerFileContents.back() << '\n';
 	}
+
+	profiler.Log("Process answer file");
+
+	profiler.PrintDiagnostics(std::cout);
 }
 
 // Makes a lot of assumptions about how JSON file is structured
