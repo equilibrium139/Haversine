@@ -24,9 +24,18 @@ static f64 RadiansFromDegrees(f64 Degrees);
 // NOTE(casey): EarthRadius is generally expected to be 6372.8
 static f64 ReferenceHaversine(const Pair& pair, f64 EarthRadius);
 
+struct HaversineResult
+{
+	std::vector<f64> distances;
+	f64 average;
+};
+
+static HaversineResult ComputeResult(const std::vector<Pair>& pairs);
+
 int main(int argc, char** argv)
 {
-	Profiler profiler;
+	ZoneProfiler::Start();
+	SimpleProfiler profiler;
 
 	if (argc < 2)
 	{
@@ -47,21 +56,14 @@ int main(int argc, char** argv)
 
 	profiler.Log("Read and parse JSON");
 
-	std::vector<f64> distances(pairs.size());
-	f64 sum = 0.0;
-	for (u64 i = 0; i < pairs.size(); i++)
-	{
-		distances[i] = ReferenceHaversine(pairs[i], radius);
-		sum += distances[i];
-	}
-
-	f64 average = sum / pairs.size();
-	std::cout << "Average: " << average << '\n';
+	HaversineResult result = ComputeResult(pairs);
+	std::cout << "Average: " << result.average << '\n';
 
 	profiler.Log("Sum");
 
 	if (answerFilename != nullptr)
 	{
+		TimeBlock("Process answer file");
 		std::ifstream answerFile{ answerFilename, std::ios::binary };
 		auto p = std::filesystem::current_path().append(answerFilename);
 		auto answerFileSizeBytes = std::filesystem::file_size(p);
@@ -72,12 +74,14 @@ int main(int argc, char** argv)
 
 	profiler.Log("Process answer file");
 
-	profiler.PrintDiagnostics(std::cout);
+	//profiler.PrintDiagnostics(std::cout);
+	ZoneProfiler::EndAndPrintDiagnostics(std::cout);
 }
 
 // Makes a lot of assumptions about how JSON file is structured
 std::vector<Pair> ParseJson(const char* filename)
 {
+	TimeFunction;
 	std::ifstream jsonFile{ filename };
 	std::vector<Pair> pairs;
 	std::string line;
@@ -136,4 +140,20 @@ f64 ReferenceHaversine(const Pair& pair, f64 EarthRadius)
 	f64 Result = EarthRadius * c;
 
 	return Result;
+}
+
+HaversineResult ComputeResult(const std::vector<Pair>& pairs)
+{
+	TimeFunction;
+	HaversineResult result;
+	result.distances.resize(pairs.size());
+	f64 sum = 0.0;
+	for (u64 i = 0; i < pairs.size(); i++)
+	{
+		result.distances[i] = ReferenceHaversine(pairs[i], radius);
+		sum += result.distances[i];
+	}
+
+	result.average = sum / pairs.size();
+	return result;
 }
