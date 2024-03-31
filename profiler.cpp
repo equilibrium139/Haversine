@@ -52,10 +52,16 @@ void ZoneProfiler::EndAndPrintDiagnostics(std::ostream& out)
 	out << "Total time: " << msEslaped << "ms (CPU freq " << instance.cpuFreq << ")\n";
 	out << std::fixed;
 	out << std::setprecision(2);
-	for (const auto& scope : instance.scopeCycles)
+	for (const auto& scope : instance.zones)
 	{
-		out << scope.first << ": " << scope.second << "(" << (f64)scope.second / (f64)totalCycles * 100.0 << "%)\n";
-		miscCycles -= scope.second;
+		u64 cyclesExcludingChildren = scope.second.cycles - scope.second.childrenCycles;
+		out << scope.first << ": " << scope.second.cycles << "(" << (f64)cyclesExcludingChildren / (f64)totalCycles * 100.0 << "%";
+		if (scope.second.childrenCycles > 0)
+		{
+			out << ", " << (f64)scope.second.cycles / (f64)totalCycles * 100.0 << "% w/ children";
+		}
+		out << ")\n";
+		miscCycles -= cyclesExcludingChildren;
 	}
 	out << "Misc: " << miscCycles << "(" << (f64)miscCycles / (f64)totalCycles * 100.0 << "%)\n";
 }

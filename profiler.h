@@ -4,7 +4,6 @@
 #include <ostream>
 #include <string>
 #include <unordered_map>
-#include <vector>
 #include "timing.h"
 
 // <Startup=1, Read=2, Parse=3, Misc=4, ... >
@@ -37,14 +36,20 @@ public:
 #define CAT(a, b) CAT_(a, b)
 #define VARNAME(Var) CAT(Var, __LINE__)
 
-#define TimeFunction ScopeProfiler VARNAME(Profiler){__func__}
-#define TimeBlock(name) ScopeProfiler VARNAME(Profiler){name}
+#define TimeFunction ScopeProfiler VARNAME(Block){__func__}
+#define TimeBlock(name) ScopeProfiler VARNAME(Block){name}
+
+struct ZoneData
+{
+	u64 cycles = 0;
+	u64 childrenCycles = 0;
+};
 					 
 class ZoneProfiler
 {
 	u64 startCount;
 	u64 cpuFreq;
-	std::vector<std::pair<std::string, u64>> scopeCycles;
+	std::unordered_map<std::string, ZoneData> zones;
 private:
 	ZoneProfiler() {}
 	friend struct ScopeProfiler;	
@@ -60,17 +65,28 @@ public:
 	void operator=(const ZoneProfiler&) = delete;
 };
 
+inline ScopeProfiler* currentScope = nullptr;
+
 struct ScopeProfiler
 {
 	u64 startCount;
+	u64 childrenCycles;
 	std::string name;
+	ScopeProfiler* parent = nullptr;
 
 	ScopeProfiler(const std::string& name)
-		:startCount(ReadCPUCounter()), name(name) {}
+		:startCount(ReadCPUCounter()), childrenCycles(0), name(name), parent(currentScope)
+	{
+		currentScope = this;
+	}
 
 	~ScopeProfiler()
 	{
-		u64 endCount = ReadCPUCounter();
-		ZoneProfiler::Instance().scopeCycles.push_back({ name, endCount - startCount });
+		u64 cycles = ReadCPUCounter() - startCount;
+		ZoneData& zone = ZoneProfiler::Instance().zones[name];
+		zone.cycles += cycles;
+		zone.childrenCycles += childrenCycles;
+		if (parent) parent->childrenCycles += cycles;
+		currentScope = parent;
 	}
 };

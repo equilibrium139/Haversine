@@ -82,27 +82,41 @@ int main(int argc, char** argv)
 std::vector<Pair> ParseJson(const char* filename)
 {
 	TimeFunction;
-	std::ifstream jsonFile{ filename };
+
 	std::vector<Pair> pairs;
-	std::string line;
-	std::getline(jsonFile, line); // skip "pairs" line
-	while (std::getline(jsonFile, line))
+	std::vector<std::string> lines;
+
 	{
-		if (line.size() > 2)
+		TimeBlock("Load Json file");
+		std::ifstream jsonFile{ filename };
+		std::string line;
+		while (std::getline(jsonFile, line))
 		{
-			pairs.emplace_back();
-			Pair& pair = pairs.back();
-			std::size_t offset = line.find(':') + 1;
-			std::from_chars(&line[offset], &line.back(), pair.x0);
-			offset = line.find(':', offset) + 1;
-			std::from_chars(&line[offset], &line.back(), pair.y0);
-			offset = line.find(':', offset) + 1;
-			std::from_chars(&line[offset], &line.back(), pair.x1);
-			offset = line.find(':', offset) + 1;
-			std::from_chars(&line[offset], &line.back(), pair.y1);
+			lines.push_back(line);
 		}
 	}
-	return pairs;
+
+	{
+		TimeBlock("Parse Json file");
+		for (u64 i = 0; i < lines.size(); i++)
+		{
+			const std::string& line = lines[i];
+			if (line.size() > 2)
+			{
+				pairs.emplace_back();
+				Pair& pair = pairs.back();
+				std::size_t offset = line.find(':') + 1;
+				std::from_chars(&line[offset], &line.back(), pair.x0);
+				offset = line.find(':', offset) + 1;
+				std::from_chars(&line[offset], &line.back(), pair.y0);
+				offset = line.find(':', offset) + 1;
+				std::from_chars(&line[offset], &line.back(), pair.x1);
+				offset = line.find(':', offset) + 1;
+				std::from_chars(&line[offset], &line.back(), pair.y1);
+			}
+		}
+		return pairs;
+	}
 }
 
 f64 Square(f64 A)
