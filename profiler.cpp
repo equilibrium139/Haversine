@@ -50,6 +50,7 @@ void ZoneProfiler::EndAndPrintDiagnostics(std::ostream& out)
 	u64 miscCycles = totalCycles;
 	f64 msEslaped = totalCycles / (instance.cpuFreq / 1000);
 	out << "Total time: " << msEslaped << "ms (CPU freq " << instance.cpuFreq << ")\n";
+	out << "Total cycles: " << totalCycles << '\n';
 	out << std::fixed;
 	out << std::setprecision(2);
 	for (const auto& scope : instance.zones)

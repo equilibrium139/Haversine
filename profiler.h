@@ -43,6 +43,7 @@ struct ZoneData
 {
 	u64 cycles = 0;
 	u64 childrenCycles = 0;
+	bool hasActiveInstance = false;
 };
 					 
 class ZoneProfiler
@@ -73,20 +74,31 @@ struct ScopeProfiler
 	u64 childrenCycles;
 	std::string name;
 	ScopeProfiler* parent = nullptr;
+	bool recursion = false;
 
 	ScopeProfiler(const std::string& name)
 		:startCount(ReadCPUCounter()), childrenCycles(0), name(name), parent(currentScope)
 	{
-		currentScope = this;
+		ZoneData& zone = ZoneProfiler::Instance().zones[name];
+		recursion = zone.hasActiveInstance;
+		zone.hasActiveInstance = true;
+		if (!recursion)
+		{
+			currentScope = this;
+		}
 	}
 
 	~ScopeProfiler()
 	{
-		u64 cycles = ReadCPUCounter() - startCount;
-		ZoneData& zone = ZoneProfiler::Instance().zones[name];
-		zone.cycles += cycles;
-		zone.childrenCycles += childrenCycles;
-		if (parent) parent->childrenCycles += cycles;
-		currentScope = parent;
+		if (!recursion)
+		{
+			u64 cycles = ReadCPUCounter() - startCount;
+			ZoneData& zone = ZoneProfiler::Instance().zones[name];
+			zone.cycles += cycles;
+			zone.childrenCycles += childrenCycles;
+			zone.hasActiveInstance = false;
+			if (parent) parent->childrenCycles += cycles;
+			currentScope = parent;
+		}
 	}
 };

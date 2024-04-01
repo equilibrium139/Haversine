@@ -23,6 +23,7 @@ static f64 Square(f64 A);
 static f64 RadiansFromDegrees(f64 Degrees);
 // NOTE(casey): EarthRadius is generally expected to be 6372.8
 static f64 ReferenceHaversine(const Pair& pair, f64 EarthRadius);
+static int fib(int n);
 
 struct HaversineResult
 {
@@ -71,6 +72,9 @@ int main(int argc, char** argv)
 		answerFile.read((char*)&answerFileContents[0], answerFileSizeBytes);
 		std::cout << "Answer file average: " << answerFileContents.back() << '\n';
 	}
+
+	int f = fib(23);
+	std::cout << f << '\n';
 
 	profiler.Log("Process answer file");
 
@@ -154,6 +158,21 @@ f64 ReferenceHaversine(const Pair& pair, f64 EarthRadius)
 	f64 Result = EarthRadius * c;
 
 	return Result;
+}
+
+int blah(int n)
+{
+	TimeFunction;
+	if (n < 2) return n;
+	return fib(n - 1) + fib(n - 2);
+}
+
+int fib(int n)
+{
+	TimeFunction;
+	return blah(n);
+	//if (n < 2) return n;
+	//return fib(n - 1) + fib(n - 2);
 }
 
 HaversineResult ComputeResult(const std::vector<Pair>& pairs)
