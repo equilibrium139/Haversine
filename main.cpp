@@ -160,16 +160,28 @@ f64 ReferenceHaversine(const Pair& pair, f64 EarthRadius)
 	return Result;
 }
 
+int blah2(int n)
+{
+	TimeFunction;
+	return fib(n);
+}
+
 int blah(int n)
 {
 	TimeFunction;
 	if (n < 2) return n;
-	return fib(n - 1) + fib(n - 2);
+	return blah2(n - 1) + blah2(n - 2);
 }
 
 int fib(int n)
 {
 	TimeFunction;
+	int sum = 0;
+	for (int i = 0; i < n * n * n; i++)
+	{
+		sum += i;
+	}
+	std::cout << sum << '\n';
 	return blah(n);
 	//if (n < 2) return n;
 	//return fib(n - 1) + fib(n - 2);
