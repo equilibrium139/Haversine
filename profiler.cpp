@@ -2,6 +2,7 @@
 #include "timing.h"
 #include <cassert>
 #include <iomanip>
+#include <format>
 
 using f64 = double;
 
@@ -61,7 +62,17 @@ void ZoneProfiler::EndAndPrintDiagnostics(std::ostream& out)
 		{
 			out << ", " << (f64)scope.second.cycles / (f64)totalCycles * 100.0 << "% w/ children";
 		}
-		out << ")\n";
+		out << ") ";
+		if (scope.second.processedByteCount > 0)
+		{
+			f64 seconds = (f64)scope.second.cycles / (f64)instance.counterFreq;
+			f64 megabytes = (f64)scope.second.processedByteCount / (1024.0 * 1024.0);
+			f64 gigabytes = megabytes / 1024.0;
+			f64 gigabytesPerSecond = gigabytes / seconds;
+			out << std::format("processed {:.3f}MB at {:.2f}GB/s", megabytes, gigabytesPerSecond);
+		}
+		out << "\n";
+
 		miscCycles -= cyclesExcludingChildren;
 	}
 	out << "Misc: " << miscCycles << "(" << (f64)miscCycles / (f64)totalCycles * 100.0 << "%)\n";

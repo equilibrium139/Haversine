@@ -32,7 +32,7 @@ struct HaversineResult
 	f64 average;
 };
 
-static HaversineResult ComputeResult(const std::vector<Pair>& pairs);
+static HaversineResult SumPairs(const std::vector<Pair>& pairs);
 
 int main(int argc, char** argv)
 {
@@ -58,7 +58,7 @@ int main(int argc, char** argv)
 
 	profiler.Log("Read and parse JSON");
 
-	HaversineResult result = ComputeResult(pairs);
+	HaversineResult result = SumPairs(pairs);
 	std::cout << "Average: " << result.average << '\n';
 
 	profiler.Log("Sum");
@@ -88,8 +88,11 @@ std::vector<Pair> ParseJson(const char* filename)
 	std::vector<Pair> pairs;
 	std::vector<std::string> lines;
 
+	auto filepath = std::filesystem::current_path().append(filename);
+	auto jsonFileBytes = std::filesystem::file_size(filepath);
+
 	{
-		TimeBlock("Load Json file");
+		TimeBlockBandwidth("Load Json file", jsonFileBytes);
 		std::ifstream jsonFile{ filename };
 		std::string line;
 		while (std::getline(jsonFile, line))
@@ -157,9 +160,9 @@ f64 ReferenceHaversine(const Pair& pair, f64 EarthRadius)
 	return Result;
 }
 
-HaversineResult ComputeResult(const std::vector<Pair>& pairs)
+HaversineResult SumPairs(const std::vector<Pair>& pairs)
 {
-	TimeFunction;
+	TimeFunctionBandwidth(pairs.size() * sizeof(Pair));
 	HaversineResult result;
 	result.distances.resize(pairs.size());
 	f64 sum = 0.0;

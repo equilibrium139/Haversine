@@ -44,11 +44,15 @@ public:
 
 #define TimeFunction ScopeProfiler VARNAME(Block){__func__}
 #define TimeBlock(name) ScopeProfiler VARNAME(Block){name}
+#define TimeFunctionBandwidth(bytes) ScopeProfiler VARNAME(Block){__func__, bytes}
+#define TimeBlockBandwidth(name, bytes) ScopeProfiler VARNAME(Block){name, bytes}
 
 #else
 
 #define TimeFunction
 #define TimeBlock(name)
+#define TimeFunctionBandwidth(bytes)
+#define TimeBlockBandwidth(name, bytes)
 
 #endif
 
@@ -56,6 +60,7 @@ struct ZoneData
 {
 	u64 cycles = 0;
 	u64 childrenCycles = 0;
+	u64 processedByteCount = 0;
 	int callCount = 0;
 	bool hasActiveInstance = false;
 };
@@ -91,12 +96,13 @@ struct ScopeProfiler
 	ZoneData* zone;
 	bool isRecursiveCall = false;
 
-	ScopeProfiler(const std::string& name)
+	ScopeProfiler(const std::string& name, u64 processedByteCount = 0)
 		:startCount(READ_COUNTER()), childrenCycles(0), name(name), parent(currentScope), zone(&ZoneProfiler::Instance().zones[name])
 	{
 		isRecursiveCall = zone->hasActiveInstance;
 		zone->hasActiveInstance = true;
 		zone->callCount++;
+		zone->processedByteCount += processedByteCount;
 		currentScope = this;
 	}
 
