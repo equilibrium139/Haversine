@@ -6,13 +6,13 @@
 using f64 = double;
 
 SimpleProfiler::SimpleProfiler()
-	:startCount(ReadCPUCounter()), cpuFreq(ComputeCPUFreqFromSystemClock(10)), prevLogCount(startCount)
+	:startCount(READ_COUNTER()), counterFreq(ComputeCounterFreqFromSystemClock(10)), prevLogCount(startCount)
 {
 }
 
 void SimpleProfiler::Log(const std::string& category)
 {
-	u64 currentCount = ReadCPUCounter();
+	u64 currentCount = READ_COUNTER();
 	u64 cyclesElapsed = currentCount - prevLogCount;
 	prevLogCount = currentCount;
 	categoryCycles[category] += cyclesElapsed;
@@ -20,12 +20,12 @@ void SimpleProfiler::Log(const std::string& category)
 
 void SimpleProfiler::PrintDiagnostics(std::ostream& out)
 {
-	u64 currentCount = ReadCPUCounter();
+	u64 currentCount = READ_COUNTER();
 	
 	u64 totalCycles = currentCount - startCount;
 	u64 miscCycles = totalCycles;
-	f64 msEslaped = totalCycles / (cpuFreq / 1000);
-	out << "Total time: " << msEslaped << "ms (CPU freq " << cpuFreq << ")\n";
+	f64 msEslaped = totalCycles / (counterFreq / 1000);
+	out << "Total time: " << msEslaped << "ms (counter freq " << counterFreq << ")\n";
 	out << std::fixed;
 	out << std::setprecision(2);
 	for (const auto& category : categoryCycles)
@@ -38,25 +38,25 @@ void SimpleProfiler::PrintDiagnostics(std::ostream& out)
 
 void ZoneProfiler::Start()
 {
-	ZoneProfiler::Instance().startCount = ReadCPUCounter();
-	ZoneProfiler::Instance().cpuFreq = ComputeCPUFreqFromSystemClock(10);
+	ZoneProfiler::Instance().startCount = READ_COUNTER();
+	ZoneProfiler::Instance().counterFreq = ComputeCounterFreqFromSystemClock(100);
 }
 
 void ZoneProfiler::EndAndPrintDiagnostics(std::ostream& out)
 {
-	u64 currentCount = ReadCPUCounter();
+	u64 currentCount = READ_COUNTER();
 	ZoneProfiler& instance = ZoneProfiler::Instance();
 	u64 totalCycles = currentCount - instance.startCount;
 	u64 miscCycles = totalCycles;
-	f64 msEslaped = totalCycles / (instance.cpuFreq / 1000);
-	out << "Total time: " << msEslaped << "ms (CPU freq " << instance.cpuFreq << ")\n";
+	f64 msEslaped = totalCycles / (instance.counterFreq / 1000);
+	out << "Total time: " << msEslaped << "ms (counter freq " << instance.counterFreq << ")\n";
 	out << "Total cycles: " << totalCycles << '\n';
 	out << std::fixed;
 	out << std::setprecision(2);
 	for (const auto& scope : instance.zones)
 	{
 		u64 cyclesExcludingChildren = scope.second.cycles - scope.second.childrenCycles;
-		out << scope.first << ": " << scope.second.cycles << "(" << (f64)cyclesExcludingChildren / (f64)totalCycles * 100.0 << "%";
+		out << scope.first << "[" << scope.second.callCount << "]: " << scope.second.cycles << "(" << (f64)cyclesExcludingChildren / (f64)totalCycles * 100.0 << "%";
 		if (scope.second.childrenCycles > 0)
 		{
 			out << ", " << (f64)scope.second.cycles / (f64)totalCycles * 100.0 << "% w/ children";

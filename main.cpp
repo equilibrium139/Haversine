@@ -5,8 +5,10 @@
 #include <string>
 #include <vector>
 
+#define PROFILER 1
 #include "profiler.h"
 #include "timing.h"
+
 
 using f64 = double;
 using u64 = std::uint64_t;
@@ -23,7 +25,6 @@ static f64 Square(f64 A);
 static f64 RadiansFromDegrees(f64 Degrees);
 // NOTE(casey): EarthRadius is generally expected to be 6372.8
 static f64 ReferenceHaversine(const Pair& pair, f64 EarthRadius);
-static int fib(int n);
 
 struct HaversineResult
 {
@@ -72,9 +73,6 @@ int main(int argc, char** argv)
 		answerFile.read((char*)&answerFileContents[0], answerFileSizeBytes);
 		std::cout << "Answer file average: " << answerFileContents.back() << '\n';
 	}
-
-	int f = fib(23);
-	std::cout << f << '\n';
 
 	profiler.Log("Process answer file");
 
@@ -141,7 +139,6 @@ f64 ReferenceHaversine(const Pair& pair, f64 EarthRadius)
 	   Instead, it attempts to follow, as closely as possible, the formula used in the real-world
 	   question on which these homework exercises are loosely based.
 	*/
-
 	f64 lat1 = pair.y0;
 	f64 lat2 = pair.y1;
 	f64 lon1 = pair.x0;
@@ -158,33 +155,6 @@ f64 ReferenceHaversine(const Pair& pair, f64 EarthRadius)
 	f64 Result = EarthRadius * c;
 
 	return Result;
-}
-
-int blah2(int n)
-{
-	TimeFunction;
-	return fib(n);
-}
-
-int blah(int n)
-{
-	TimeFunction;
-	if (n < 2) return n;
-	return blah2(n - 1) + blah2(n - 2);
-}
-
-int fib(int n)
-{
-	TimeFunction;
-	int sum = 0;
-	for (int i = 0; i < n * n * n; i++)
-	{
-		sum += i;
-	}
-	std::cout << sum << '\n';
-	return blah(n);
-	//if (n < 2) return n;
-	//return fib(n - 1) + fib(n - 2);
 }
 
 HaversineResult ComputeResult(const std::vector<Pair>& pairs)

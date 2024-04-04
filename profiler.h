@@ -24,7 +24,7 @@ class SimpleProfiler
 {
 	std::unordered_map<std::string, u64> categoryCycles;
 	u64 startCount;
-	u64 cpuFreq;
+	u64 counterFreq;
 	u64 prevLogCount;
 public:
 	SimpleProfiler();
@@ -32,24 +32,38 @@ public:
 	void PrintDiagnostics(std::ostream& out);
 };
 
+#ifndef PROFILER
+#define PROFILER 0
+#endif
+
 #define CAT_(a, b) a ## b
 #define CAT(a, b) CAT_(a, b)
 #define VARNAME(Var) CAT(Var, __LINE__)
 
+#if PROFILER
+
 #define TimeFunction ScopeProfiler VARNAME(Block){__func__}
 #define TimeBlock(name) ScopeProfiler VARNAME(Block){name}
+
+#else
+
+#define TimeFunction
+#define TimeBlock(name)
+
+#endif
 
 struct ZoneData
 {
 	u64 cycles = 0;
 	u64 childrenCycles = 0;
+	int callCount = 0;
 	bool hasActiveInstance = false;
 };
 					 
 class ZoneProfiler
 {
 	u64 startCount;
-	u64 cpuFreq;
+	u64 counterFreq;
 	std::unordered_map<std::string, ZoneData> zones;
 private:
 	ZoneProfiler() {}
@@ -78,16 +92,17 @@ struct ScopeProfiler
 	bool isRecursiveCall = false;
 
 	ScopeProfiler(const std::string& name)
-		:startCount(ReadCPUCounter()), childrenCycles(0), name(name), parent(currentScope), zone(&ZoneProfiler::Instance().zones[name])
+		:startCount(READ_COUNTER()), childrenCycles(0), name(name), parent(currentScope), zone(&ZoneProfiler::Instance().zones[name])
 	{
 		isRecursiveCall = zone->hasActiveInstance;
 		zone->hasActiveInstance = true;
+		zone->callCount++;
 		currentScope = this;
 	}
 
 	~ScopeProfiler()
 	{
-		u64 cycles = ReadCPUCounter() - startCount;
+		u64 cycles = READ_COUNTER() - startCount;
 		if (parent && parent->zone != zone) parent->childrenCycles += cycles;
 		if (!isRecursiveCall) {
 			zone->cycles += cycles;
