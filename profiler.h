@@ -4,7 +4,7 @@
 #include <ostream>
 #include <string>
 #include <unordered_map>
-#include "timing.h"
+#include "Timing.h"
 
 // <Startup=1, Read=2, Parse=3, Misc=4, ... >
 // 
@@ -89,9 +89,9 @@ inline ScopeProfiler* currentScope = nullptr;
 
 struct ScopeProfiler
 {
+	std::string name;
 	u64 startCount;
 	u64 childrenCycles;
-	std::string name;
 	ScopeProfiler* parent = nullptr;
 	ZoneData* zone;
 	bool isRecursiveCall = false;

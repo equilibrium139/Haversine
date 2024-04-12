@@ -1,5 +1,5 @@
-#include "profiler.h"
-#include "timing.h"
+#include "Profiler.h"
+#include "Timing.h"
 #include <cassert>
 #include <iomanip>
 #include <format>

@@ -1,13 +1,22 @@
+#define _CRT_SECURE_NO_DEPRECATE // for fread
+#define NOMINMAX
+#include <stdio.h>
+#include <cassert>
 #include <charconv>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
+#include <windows.h>
+#include <tchar.h>
+#include <stdio.h>
+#include <strsafe.h>
 
 #define PROFILER 1
-#include "profiler.h"
-#include "timing.h"
+#include "Profiler.h"
+#include "Timing.h"
+#include "RepetitionTester.h"
 
 
 using f64 = double;
@@ -20,7 +29,7 @@ struct Pair
 
 constexpr f64 radius = 6372.8;
 
-std::vector<Pair> ParseJson(const char* filename);
+static std::vector<Pair> ParseJson(const char* filename);
 static f64 Square(f64 A);
 static f64 RadiansFromDegrees(f64 Degrees);
 // NOTE(casey): EarthRadius is generally expected to be 6372.8
@@ -33,6 +42,8 @@ struct HaversineResult
 };
 
 static HaversineResult SumPairs(const std::vector<Pair>& pairs);
+
+static void TestReadFunctions(const char* filename);
 
 int main(int argc, char** argv)
 {
@@ -75,6 +86,8 @@ int main(int argc, char** argv)
 	}
 
 	profiler.Log("Process answer file");
+
+	TestReadFunctions(jsonFilename);
 
 	//profiler.PrintDiagnostics(std::cout);
 	ZoneProfiler::EndAndPrintDiagnostics(std::cout);
@@ -172,6 +185,76 @@ HaversineResult SumPairs(const std::vector<Pair>& pairs)
 		sum += result.distances[i];
 	}
 
-	result.average = sum / pairs.size();
+	result.average = sum / (f64)pairs.size();
 	return result;
+}
+
+void TestReadFunctions(const char* filename)
+{
+	auto filepath = std::filesystem::current_path().append(filename);
+	auto fileSizeBytes = std::filesystem::file_size(filepath);
+	std::vector<char> buffer(fileSizeBytes);
+
+	RepetitionTester freadTester{ "fread", 10.0, fileSizeBytes, true};
+	while (freadTester.IsTesting())
+	{
+		FILE* file = fopen(filename, "rb");
+			
+		freadTester.StartRun();
+
+		fread(buffer.data(), sizeof(buffer[0]), sizeof(buffer[0]) * buffer.size(), file);
+
+		freadTester.EndRun();
+
+		fclose(file);
+	}
+	freadTester.PrintDiagnostics();
+
+	RepetitionTester ifstreamTester{ "ifstream", 10.0, fileSizeBytes, true };
+	while (ifstreamTester.IsTesting())
+	{
+		char* bufferPtr = &buffer[0];
+		auto bytesLeft = buffer.size();
+		std::ifstream file(filename, std::ios::binary);
+		file.rdbuf()->pubsetbuf(&buffer[0], buffer.size());
+
+		ifstreamTester.StartRun();
+
+		while (bytesLeft > 0)
+		{
+			constexpr auto maxBytesToRead = std::numeric_limits<std::streamsize>::max();
+			auto bytesToRead = bytesLeft < maxBytesToRead ? bytesLeft : maxBytesToRead;
+			file.read(&buffer[0], buffer.size());
+			assert(file);
+			bytesLeft -= bytesToRead;
+		}
+
+		file.read(&buffer[0], buffer.size());
+
+		ifstreamTester.EndRun();
+	}
+	ifstreamTester.PrintDiagnostics();
+
+	RepetitionTester readFileTester{ "ReadFile", 10.0, fileSizeBytes, true };
+	while (readFileTester.IsTesting())
+	{
+		char* bufferPtr = &buffer[0];
+		auto bytesLeft = buffer.size();
+		HANDLE file = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, 0,
+			OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+		readFileTester.StartRun();
+
+		while (bytesLeft > 0)
+		{
+			DWORD bytesRead;
+			DWORD bytesToRead = bytesLeft < MAXDWORD ? bytesLeft : MAXDWORD;
+			BOOL success = ReadFile(file, bufferPtr, bytesToRead, &bytesRead, NULL);
+			assert(success);
+			bytesLeft -= bytesRead;
+			bufferPtr += bytesRead;
+		}
+
+		readFileTester.EndRun();
+	}
+	readFileTester.PrintDiagnostics();
 }

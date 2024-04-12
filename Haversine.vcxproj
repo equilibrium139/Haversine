@@ -19,13 +19,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="profiler.cpp" />
-    <ClCompile Include="timing.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Profiler.cpp" />
+    <ClCompile Include="RepetitionTester.cpp" />
+    <ClCompile Include="Timing.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="profiler.h" />
-    <ClInclude Include="timing.h" />
+    <ClInclude Include="Profiler.h" />
+    <ClInclude Include="RepetitionTester.h" />
+    <ClInclude Include="Timing.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

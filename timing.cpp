@@ -1,4 +1,4 @@
-#include "timing.h"
+#include "Timing.h"
 
 u64 ComputeCounterFreqFromSystemClock(u64 milliseconds)
 {

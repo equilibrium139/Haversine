@@ -14,14 +14,14 @@ inline u64 ReadSystemCounter()
 {
 	LARGE_INTEGER count;
 	QueryPerformanceCounter(&count);
-	return count.QuadPart;
+	return (u64)count.QuadPart;
 }
 
 inline u64 ReadSystemFreq()
 {
 	LARGE_INTEGER freq;
 	QueryPerformanceFrequency(&freq);
-	return freq.QuadPart;
+	return (u64)freq.QuadPart;
 }
 
 inline u64 ReadCPUCounter()
